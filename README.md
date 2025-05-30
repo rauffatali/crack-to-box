@@ -158,11 +158,8 @@ seg-to-box/
 
 ## Known Issues & TODOs
 
-- **Streamlit Interface**: The web-based interface is not fully implemented and has import path issues that need to be resolved
 - **Future Enhancements**: 
-  - Complete Streamlit implementation
-  <!-- - Add keyboard shortcuts for faster annotation
-  - Implement batch processing features -->
+  - Complete Streamlit implementation with full feature parity
   - Add annotation validation tools
 
 ## License

@@ -12,13 +12,7 @@ from tkinter import ttk, filedialog, messagebox, font
 import os
 from typing import Callable, List, Tuple, Optional
 
-try:
-    from utils.image_loader import validate_dataset_structure, get_dataset_info, load_dataset
-except ImportError:
-    # Fallback for development
-    import sys
-    sys.path.append('..')
-    from utils.image_loader import validate_dataset_structure, get_dataset_info, load_dataset
+from utils.image_loader import validate_dataset_structure, get_dataset_info, load_dataset
 
 
 class DatasetSetupWindow:

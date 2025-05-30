@@ -17,17 +17,9 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 from typing import List, Dict, Any
 
-try:
-    from utils_new.mask_to_boxes import mask_to_boxes, visualize_boxes
-    from utils_new.image_loader import load_image_and_mask, load_dataset, find_mask_file, validate_dataset_structure
-    from utils_new.io_utils import save_annotations_to_json, export_annotations_to_yolo, export_annotations_to_coco
-except ImportError:
-    # Fallback for development
-    import sys
-    sys.path.append('..')
-    from utils_new.mask_to_boxes import mask_to_boxes, visualize_boxes
-    from utils_new.image_loader import load_image_and_mask, load_dataset, find_mask_file, validate_dataset_structure
-    from utils_new.io_utils import save_annotations_to_json, export_annotations_to_yolo, export_annotations_to_coco
+from utils.mask_to_boxes import mask_to_boxes, visualize_boxes
+from utils.image_loader import load_image_and_mask, load_dataset, find_mask_file, validate_dataset_structure
+from utils.io_utils import save_annotations_to_json, export_annotations_to_yolo, export_annotations_to_coco
 
 
 # Set page configuration

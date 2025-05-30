@@ -16,21 +16,11 @@ from PIL import Image, ImageTk, ImageOps
 from typing import List, Optional
 import numpy as np
 
-try:
-    from utils.mask_to_boxes import mask_to_boxes
-    from utils.image_loader import load_image_and_mask, find_mask_file
-    from utils.io_utils import save_annotations_to_json, export_annotations_to_yolo, export_annotations_to_coco
-    from utils.box_editor import BoxEditor
-    from gui.setup_window import show_setup_dialog
-except ImportError:
-    # Fallback for development
-    import sys
-    sys.path.append('..')
-    from utils.mask_to_boxes import mask_to_boxes
-    from utils.image_loader import load_image_and_mask, find_mask_file
-    from utils.io_utils import save_annotations_to_json, export_annotations_to_yolo, export_annotations_to_coco
-    from utils.box_editor import BoxEditor
-    from gui.setup_window import show_setup_dialog
+from utils.mask_to_boxes import mask_to_boxes
+from utils.image_loader import load_image_and_mask, find_mask_file
+from utils.io_utils import save_annotations_to_json, export_annotations_to_yolo, export_annotations_to_coco
+from utils.box_editor import BoxEditor
+from gui.setup_window import show_setup_dialog
 
 
 class SegmentationAnnotator:
@@ -811,93 +801,58 @@ Display: {self.display_width} × {self.display_height}"""
             self._on_box_modified(0)  # Trigger update
             self.status_var.set(f"Filtered boxes smaller than {min_area} pixels")
             
+    def _handle_zoom_change(self, new_scale_factor):
+        """Handle zoom change by updating display and maintaining view center."""
+        if not self.original_image:
+            return
+            
+        old_scale = self.scale_factor
+        self.scale_factor = new_scale_factor
+        
+        # Only proceed if scale actually changed
+        if old_scale != self.scale_factor:
+            # Get current view center relative to the image
+            canvas_width = self.canvas.winfo_width()
+            canvas_height = self.canvas.winfo_height()
+            
+            # Get the current scroll position
+            x_view = self.canvas.xview()
+            y_view = self.canvas.yview()
+            
+            # Calculate the center point in the current view
+            center_x = x_view[0] + (x_view[1] - x_view[0]) / 2
+            center_y = y_view[0] + (y_view[1] - y_view[0]) / 2
+            
+            # Update display
+            self.display_image()
+            
+            # Reload annotations with new scale factor
+            self._load_existing_annotations(
+                os.path.join(self.dataset_path, "images", self.image_files[self.current_image_idx])
+            )
+            
+            # Get the new scroll region size
+            bbox = self.canvas.bbox("all")
+            if bbox:
+                scroll_width = bbox[2] - bbox[0]
+                scroll_height = bbox[3] - bbox[1]
+                
+                # Calculate and apply the new scroll position
+                new_x = center_x - (canvas_width / (2 * scroll_width))
+                new_y = center_y - (canvas_height / (2 * scroll_height))
+                
+                self.canvas.xview_moveto(new_x)
+                self.canvas.yview_moveto(new_y)
+            
     def zoom_in(self):
         """Zoom in on the image."""
-        if self.original_image:
-            old_scale = self.scale_factor
-            self.scale_factor = min(self.scale_factor * 1.2, 5.0)
-            
-            # Only proceed if scale actually changed
-            if old_scale != self.scale_factor:
-                # Get current view center relative to the image
-                canvas_width = self.canvas.winfo_width()
-                canvas_height = self.canvas.winfo_height()
-                
-                # Get the current scroll position
-                x_view = self.canvas.xview()
-                y_view = self.canvas.yview()
-                
-                # Calculate the center point in the current view
-                center_x = x_view[0] + (x_view[1] - x_view[0]) / 2
-                center_y = y_view[0] + (y_view[1] - y_view[0]) / 2
-                
-                # Store current boxes and labels before updating display
-                current_boxes, labels = self.box_editor.get_boxes()
-                
-                # Update display
-                self.display_image()
-                
-                # Reload annotations with new scale factor
-                self._load_existing_annotations(
-                    os.path.join(self.dataset_path, "images", self.image_files[self.current_image_idx])
-                )
-                
-                # Get the new scroll region size
-                bbox = self.canvas.bbox("all")
-                if bbox:
-                    scroll_width = bbox[2] - bbox[0]
-                    scroll_height = bbox[3] - bbox[1]
-                    
-                    # Calculate and apply the new scroll position
-                    new_x = center_x - (canvas_width / (2 * scroll_width))
-                    new_y = center_y - (canvas_height / (2 * scroll_height))
-                    
-                    self.canvas.xview_moveto(new_x)
-                    self.canvas.yview_moveto(new_y)
+        new_scale = min(self.scale_factor * 1.2, 5.0)
+        self._handle_zoom_change(new_scale)
             
     def zoom_out(self):
         """Zoom out from the image."""
-        if self.original_image:
-            old_scale = self.scale_factor
-            self.scale_factor = max(self.scale_factor / 1.2, 0.1)
-            
-            # Only proceed if scale actually changed
-            if old_scale != self.scale_factor:
-                # Get current view center relative to the image
-                canvas_width = self.canvas.winfo_width()
-                canvas_height = self.canvas.winfo_height()
-                
-                # Get the current scroll position
-                x_view = self.canvas.xview()
-                y_view = self.canvas.yview()
-                
-                # Calculate the center point in the current view
-                center_x = x_view[0] + (x_view[1] - x_view[0]) / 2
-                center_y = y_view[0] + (y_view[1] - y_view[0]) / 2
-                
-                # Store current boxes and labels before updating display
-                current_boxes, labels = self.box_editor.get_boxes()
-                
-                # Update display
-                self.display_image()
-                
-                # Reload annotations with new scale factor
-                self._load_existing_annotations(
-                    os.path.join(self.dataset_path, "images", self.image_files[self.current_image_idx])
-                )
-                
-                # Get the new scroll region size
-                bbox = self.canvas.bbox("all")
-                if bbox:
-                    scroll_width = bbox[2] - bbox[0]
-                    scroll_height = bbox[3] - bbox[1]
-                    
-                    # Calculate and apply the new scroll position
-                    new_x = center_x - (canvas_width / (2 * scroll_width))
-                    new_y = center_y - (canvas_height / (2 * scroll_height))
-                    
-                    self.canvas.xview_moveto(new_x)
-                    self.canvas.yview_moveto(new_y)
+        new_scale = max(self.scale_factor / 1.2, 0.1)
+        self._handle_zoom_change(new_scale)
             
     def fit_to_window(self):
         """Fit the image to the window."""
@@ -1155,9 +1110,17 @@ Great job on completing your annotation task!""".format(
                     anchor="nw",
                     image=self.displayed_mask
                 )
-                # Make sure the mask is below boxes but above the image
-                self.canvas.tag_lower(self.canvas_mask, "box")
+                
+                # Position the mask overlay appropriately
+                # First, ensure it's above the image
                 self.canvas.tag_raise(self.canvas_mask, self.canvas_image)
+                
+                # If there are boxes, position mask below them
+                # Check if any items with "box" tag exist first
+                box_items = self.canvas.find_withtag("box")
+                if box_items:
+                    # There are boxes, so put mask below them but above image
+                    self.canvas.tag_lower(self.canvas_mask, "box")
     
     def _hide_mask_overlay(self):
         """Hide the mask overlay without affecting other canvas elements."""

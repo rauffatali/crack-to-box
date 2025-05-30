@@ -17,7 +17,7 @@ try:
         export_annotations_to_yolo,
         export_annotations_to_coco
     )
-    from .image_loader import load_image_and_mask, load_dataset, find_mask_file
+    from .image_loader import load_image_and_mask, load_dataset, find_mask_file, validate_dataset_structure
     from .box_editor import BoxEditor
 except ImportError as e:
     print(f"Warning: Could not import some utilities: {e}")
@@ -32,5 +32,6 @@ __all__ = [
     "load_image_and_mask",
     "load_dataset",
     "find_mask_file",
+    "validate_dataset_structure",
     "BoxEditor"
 ] 

@@ -34,7 +34,6 @@ def launch_streamlit():
     """Launch the Streamlit interface"""
     try:
         import subprocess
-        import sys
         
         # Launch streamlit with the app file
         streamlit_app_path = os.path.join(os.path.dirname(__file__), "gui", "streamlit_app.py")

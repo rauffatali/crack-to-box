@@ -28,9 +28,23 @@ ENV/
 .streamlit/
 
 # Project specific
+instruction.md
 dataset/
 test_dataset/
-tests/
 */output/
-*/output_yolo/ 
-instruction.md
+*/output_yolo/
+*/output_coco/
+
+# Development test files (keep test_*.py but ignore debug files)
+tests/*debug*
+tests/*transformation*
+tests/*validation*
+tests/*alignment*
+tests/*scaling*
+tests/*fixes*
+tests/*old_vs_new*
+tests/*pipeline*
+tests/*.png
+tests/*.jpg
+tests/*.ipynb
+tests/generate_*.py
