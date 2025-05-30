@@ -1,0 +1,4 @@
+alligator
+longitudinal
+transverse
+diagonal

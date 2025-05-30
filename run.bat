@@ -1,0 +1,3 @@
+@echo off
+echo Starting Segmentation to Bounding Box Annotator...
+python main.py --tk 
