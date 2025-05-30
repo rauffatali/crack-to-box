@@ -142,7 +142,6 @@ seg-to-box/
 │   ├── io_utils.py           # Export functionality
 │   └── box_editor.py         # Interactive box editing
 ├── assets/                    # Sample images and resources
-├── tests/                     # Unit tests
 └── requirements.txt          # Python dependencies
 ```
 
@@ -162,8 +161,8 @@ seg-to-box/
 - **Streamlit Interface**: The web-based interface is not fully implemented and has import path issues that need to be resolved
 - **Future Enhancements**: 
   - Complete Streamlit implementation
-  - Add keyboard shortcuts for faster annotation
-  - Implement batch processing features
+  <!-- - Add keyboard shortcuts for faster annotation
+  - Implement batch processing features -->
   - Add annotation validation tools
 
 ## License
