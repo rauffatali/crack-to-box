@@ -152,7 +152,7 @@ def setup_page():
         if st.button("Use Defaults", key="use_defaults"):
             default_labels = ["person", "car", "bicycle", "dog", "cat"]
             st.session_state.class_labels = default_labels
-            st.rerun()
+            st.experimental_rerun()
     
     # Example
     st.caption("💡 Example: person, car, bicycle, dog, cat")
@@ -195,7 +195,7 @@ def setup_page():
         st.session_state.setup_complete = True
         
         st.success(f"✅ Dataset loaded successfully! Found {len(image_files)} images.")
-        st.rerun()
+        st.experimental_rerun()
 
 
 def annotation_page():
@@ -221,7 +221,7 @@ def annotation_page():
         # New dataset button
         if st.button("📁 Load New Dataset", key="new_dataset"):
             st.session_state.setup_complete = False
-            st.rerun()
+            st.experimental_rerun()
     
     # Main content area
     col1, col2, col3, col4 = st.columns([1, 1, 1, 2])
@@ -230,12 +230,12 @@ def annotation_page():
     with col1:
         if st.button("⬅️ Previous", key="prev_image", disabled=st.session_state.current_image_idx == 0):
             st.session_state.current_image_idx -= 1
-            st.rerun()
+            st.experimental_rerun()
     
     with col2:
         if st.button("Next ➡️", key="next_image", disabled=st.session_state.current_image_idx >= len(st.session_state.image_files) - 1):
             st.session_state.current_image_idx += 1
-            st.rerun()
+            st.experimental_rerun()
     
     with col3:
         st.write(f"**Image {st.session_state.current_image_idx + 1} of {len(st.session_state.image_files)}**")
@@ -280,7 +280,7 @@ def annotation_page():
                     'labels': ["" for _ in range(len(boxes))]
                 }
                 st.success(f"✅ Generated {len(boxes)} bounding boxes")
-                st.rerun()
+                st.experimental_rerun()
             else:
                 st.warning("⚠️ No objects found in the mask")
     

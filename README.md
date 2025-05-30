@@ -142,6 +142,7 @@ seg-to-box/
 │   ├── io_utils.py           # Export functionality
 │   └── box_editor.py         # Interactive box editing
 ├── assets/                    # Sample images and resources
+├── tests/                    # Unit tests
 └── requirements.txt          # Python dependencies
 ```
 

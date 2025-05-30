@@ -403,6 +403,9 @@ Ready to annotate your images!"""
         try:
             # Load image
             self.original_image = Image.open(image_path)
+            self.image_format = self.original_image.format
+
+            # Rotate image if necessary
             self.original_image = ImageOps.exif_transpose(self.original_image)
             
             # Load corresponding mask
@@ -509,7 +512,7 @@ Ready to annotate your images!"""
         info = f"""Filename: {filename}
 Size: {image.size[0]} × {image.size[1]}
 Mode: {image.mode}
-Format: {image.format or 'Unknown'}
+Format: {self.image_format or 'Unknown'}
 
 Scale: {self.scale_factor:.2f}x
 Display: {self.display_width} × {self.display_height}"""
@@ -523,10 +526,6 @@ Display: {self.display_width} × {self.display_height}"""
             data = self.annotations[image_path]
             boxes = data['boxes']
             labels = data['labels']
-            
-            # Get canvas dimensions
-            canvas_width = self.canvas.winfo_width()
-            canvas_height = self.canvas.winfo_height()
             
             # Get the image position on canvas
             bbox = self.canvas.bbox(self.canvas_image)
