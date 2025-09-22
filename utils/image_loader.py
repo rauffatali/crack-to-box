@@ -53,6 +53,7 @@ def load_image_and_mask(image_path: str, mask_path: str) -> Tuple[Optional[np.nd
         # Load mask
         mask_pil = Image.open(mask_path)
         mask = np.array(mask_pil)
+        print(f"   Unique values in mask (before): {np.unique(mask)}")
         
         # If image orientation changed due to EXIF, we need to apply the same transformation to mask
         if orientation_changed:
@@ -136,6 +137,12 @@ def load_image_and_mask(image_path: str, mask_path: str) -> Tuple[Optional[np.nd
             # Already binary, just ensure values are 0 and 255
             mask = np.where(mask > 0, 255, 0).astype(np.uint8)
         
+        zero_count = np.count_nonzero(mask == 0)
+        one_count = mask.size - zero_count
+        if zero_count < one_count:
+            print("Detected inverted mask (object=0). Inverting to object=255, background=0.")
+            mask = np.where(mask > 0, 0, 255).astype(np.uint8)
+        
         # Final check: Fix any remaining dimension mismatch
         if image.shape[:2] != mask.shape[:2]:
             print(f"Warning: Final dimension mismatch - Image: {image.shape[:2]}, Mask: {mask.shape[:2]}")
@@ -144,6 +151,8 @@ def load_image_and_mask(image_path: str, mask_path: str) -> Tuple[Optional[np.nd
                 mask = mask.T
             else:
                 print(f"Could not resolve dimension mismatch")
+
+        print(f"   Unique values in mask (after): {np.unique(mask)}")
         
         print(f"   Final image shape: {image.shape}")
         print(f"   Final mask shape: {mask.shape}")
@@ -172,8 +181,8 @@ def load_dataset(dataset_path: str) -> List[str]:
         print(f"Images directory not found: {images_path}")
         return []
     
-    # Supported image extensions
-    image_extensions = ['.jpg', '.jpeg', '.png', '.bmp', '.tiff', '.tif']
+    # Supported image extensions (including grayscale formats like .pgm)
+    image_extensions = ['.jpg', '.jpeg', '.png', '.bmp', '.tiff', '.tif', '.pgm']
     
     image_files = []
     for filename in os.listdir(images_path):
@@ -181,7 +190,7 @@ def load_dataset(dataset_path: str) -> List[str]:
             image_files.append(filename)
     
     image_files.sort()  # Sort for consistent ordering
-    print(f"Found {len(image_files)} images in {images_path}")
+    # print(f"Found {len(image_files)} images in {images_path}")
     return image_files
 
 
@@ -208,9 +217,27 @@ def find_mask_file(image_filename: str, annotations_dir: str) -> Optional[str]:
         f"{base_name}_mask.png",
         f"{base_name}_mask.jpg",
         f"{base_name}_mask.jpeg",
+        f"{base_name}_mask.pgm",
+        f"{base_name}_MASK.png",
+        f"{base_name}_MASK.jpg",
+        f"{base_name}_MASK.jpeg",
+        f"{base_name}_MASK.pgm",
+        f"{base_name}.mask.png",
+        f"{base_name}.mask.jpg",
+        f"{base_name}.mask.jpeg",
+        f"{base_name}.mask.pgm",
+        f"{base_name}.MASK.png",
+        f"{base_name}.MASK.jpg",
+        f"{base_name}.MASK.jpeg",
+        f"{base_name}.MASK.pgm",
         f"{base_name}.png",
         f"{base_name}.jpg",
         f"{base_name}.jpeg",
+        f"{base_name}.tiff",
+        f"{base_name}.tif",
+        f"{base_name}.bmp",
+        f"{base_name}.pgm",
+        f"{base_name}.webp",
         f"{base_name}_annotation.png",
         f"{base_name}_seg.png",
         f"{base_name}_segmentation.png"
@@ -225,6 +252,38 @@ def find_mask_file(image_filename: str, annotations_dir: str) -> Optional[str]:
     print(f"No mask file found for image: {image_filename}")
     return None
 
+def partition_images_by_mask(dataset_path: str, annotations_subdir: str = "masks") -> Tuple[List[str], List[str]]:
+    """
+    Split image filenames into two lists: with masks and without masks.
+    
+    Args:
+        dataset_path (str): Path to the dataset directory
+        annotations_subdir (str): Subdirectory name that contains masks (default: "masks")
+    
+    Returns:
+        tuple: (with_masks, without_masks) lists of image filenames
+    """
+    image_files = load_dataset(dataset_path)
+    annotations_dir = os.path.join(dataset_path, annotations_subdir)
+    
+    with_masks: List[str] = []
+    without_masks: List[str] = []
+    
+    for filename in image_files:
+        if find_mask_file(filename, annotations_dir):
+            with_masks.append(filename)
+        else:
+            without_masks.append(filename)
+    
+    return with_masks, without_masks
+
+def get_image_files_ordered_by_mask(dataset_path: str, annotations_subdir: str = "masks") -> List[str]:
+    """
+    Return image filenames ordered so those with masks come first, followed by those without masks.
+    """
+    with_masks, without_masks = partition_images_by_mask(dataset_path, annotations_subdir)
+    return with_masks + without_masks
+
 
 def validate_dataset_structure(dataset_path: str) -> Tuple[bool, str]:
     """
@@ -233,7 +292,7 @@ def validate_dataset_structure(dataset_path: str) -> Tuple[bool, str]:
     Expected structure:
     dataset_path/
     ├── images/         (Contains image files)
-    └── annotations/    (Contains mask files)
+    └── masks/    (Contains mask files)
     
     Args:
         dataset_path (str): Path to the dataset directory
@@ -247,7 +306,6 @@ def validate_dataset_structure(dataset_path: str) -> Tuple[bool, str]:
     if not os.path.isdir(dataset_path):
         return False, f"Dataset path is not a directory: {dataset_path}"
     
-    # Check for images directory
     images_path = os.path.join(dataset_path, "images")
     if not os.path.exists(images_path):
         return False, f"Images directory not found: {images_path}"
@@ -256,7 +314,7 @@ def validate_dataset_structure(dataset_path: str) -> Tuple[bool, str]:
         return False, f"Images path is not a directory: {images_path}"
     
     # Check for annotations directory
-    annotations_path = os.path.join(dataset_path, "annotations")
+    annotations_path = os.path.join(dataset_path, "masks")
     if not os.path.exists(annotations_path):
         return False, f"Annotations directory not found: {annotations_path}"
     
@@ -319,7 +377,7 @@ def get_dataset_info(dataset_path: str) -> dict:
             info["image_extensions"].add(ext)
         
         # Get mask information
-        annotations_path = os.path.join(dataset_path, "annotations")
+        annotations_path = os.path.join(dataset_path, "masks")
         mask_count = 0
         
         for image_file in image_files:

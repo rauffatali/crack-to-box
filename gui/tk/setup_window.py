@@ -129,14 +129,14 @@ class DatasetSetupWindow:
         
     def _create_dataset_section(self, parent):
         """Create the dataset configuration section."""
-        dataset_frame = ttk.LabelFrame(parent, text="📁 Dataset Configuration", padding="10")
+        dataset_frame = ttk.LabelFrame(parent, text="Dataset Configuration", padding="10")
         dataset_frame.pack(fill=tk.X, pady=(0, 10))
         
         # Dataset structure info
         info_text = """Required Dataset Structure:
                     📂 dataset_folder/
                     ├── 📂 images/         (Contains .jpg, .png, or other image files)
-                    └── 📂 annotations/    (Contains segmentation mask files)
+                    └── 📂 masks/    (Contains segmentation mask files)
                     """
         info_label = ttk.Label(
             dataset_frame,
@@ -156,7 +156,7 @@ class DatasetSetupWindow:
         self.dataset_entry = ttk.Entry(path_frame, textvariable=self.dataset_var, font=("Arial", 10))
         self.dataset_entry.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 10))
         
-        browse_btn = ttk.Button(path_frame, text="📁 Browse", command=self.browse_dataset)
+        browse_btn = ttk.Button(path_frame, text="Browse", command=self.browse_dataset)
         browse_btn.pack(side=tk.RIGHT)
         
         # Validation button
@@ -167,7 +167,7 @@ class DatasetSetupWindow:
         """Create the class labels configuration section."""
 
         
-        labels_frame = ttk.LabelFrame(parent, text="🏷️ Class Labels Configuration", padding="10")
+        labels_frame = ttk.LabelFrame(parent, text="Class Labels Configuration", padding="10")
         labels_frame.pack(fill=tk.X, pady=(0, 10))
         
         # Instructions
@@ -208,7 +208,7 @@ class DatasetSetupWindow:
         
     def _create_info_section(self, parent):
         """Create the dataset information/preview section."""
-        self.info_frame = ttk.LabelFrame(parent, text="📊 Dataset Information", padding="15")
+        self.info_frame = ttk.LabelFrame(parent, text="Dataset Information", padding="15")
         self.info_frame.pack(fill=tk.X)
         
         self.info_text = tk.Text(
@@ -246,7 +246,7 @@ class DatasetSetupWindow:
         # Load Dataset button (primary action)
         self.load_btn = ttk.Button(
             button_frame,
-            text="🚀 Load Dataset",
+            text="Load Dataset",
             command=self.load_dataset,
             style="Accent.TButton",
             padding=(15, 8)
@@ -369,7 +369,9 @@ Please check the dataset structure and try again."""
             
         try:
             # Load image files
-            image_files = load_dataset(dataset_path)
+            from utils.image_loader import get_image_files_ordered_by_mask
+            image_files = get_image_files_ordered_by_mask(dataset_path, annotations_subdir="masks")
+            # image_files = load_dataset(dataset_path)
             if not image_files:
                 messagebox.showerror("Error", "No images found in the specified directory")
                 return

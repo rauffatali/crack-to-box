@@ -9,18 +9,19 @@ This module provides:
 - Save/export functionality
 """
 
-import tkinter as tk
-from tkinter import ttk, messagebox, simpledialog
 import os
+import numpy as np
 from PIL import Image, ImageTk, ImageOps
 from typing import List, Optional
-import numpy as np
+
+import tkinter as tk
+from tkinter import ttk, messagebox, simpledialog
 
 from utils.mask_to_boxes import mask_to_boxes
 from utils.image_loader import load_image_and_mask, find_mask_file
 from utils.io_utils import save_annotations_to_json, export_annotations_to_yolo, export_annotations_to_coco
 from utils.box_editor import BoxEditor
-from gui.setup_window import show_setup_dialog
+from gui.tk.setup_window import show_setup_dialog
 
 
 class SegmentationAnnotator:
@@ -118,11 +119,11 @@ class SegmentationAnnotator:
         toolbar_frame.grid(row=0, column=0, columnspan=3, sticky="ew", pady=(0, 10))
         
         # Dataset management
-        ttk.Button(toolbar_frame, text="📁 Open Dataset", command=self.show_setup_dialog).pack(side=tk.LEFT, padx=(0, 5))
+        ttk.Button(toolbar_frame, text="Open Dataset", command=self.show_setup_dialog).pack(side=tk.LEFT, padx=(0, 5))
         
         ttk.Separator(toolbar_frame, orient=tk.VERTICAL).pack(side=tk.LEFT, fill=tk.Y, padx=5)
         # Mask overlay button (initially disabled)
-        self.mask_overlay_btn = ttk.Button(toolbar_frame, text="👁️ Show Mask (Ctrl+M)", command=self.toggle_mask_overlay, state=tk.DISABLED)
+        self.mask_overlay_btn = ttk.Button(toolbar_frame, text="Show Mask (Ctrl+M)", command=self.toggle_mask_overlay, state=tk.DISABLED)
         self.mask_overlay_btn.pack(side=tk.LEFT, padx=(0, 5))
         
         # Tools
@@ -130,7 +131,7 @@ class SegmentationAnnotator:
         self.tools_frame.pack(side=tk.LEFT, padx=5)
         
         # Add undo button to the right corner
-        self.undo_btn = ttk.Button(toolbar_frame, text="↶ Undo (Ctrl+Z)", command=self.undo_last_action, state=tk.DISABLED)
+        self.undo_btn = ttk.Button(toolbar_frame, text="Undo (Ctrl+Z)", command=self.undo_last_action, state=tk.DISABLED)
         self.undo_btn.pack(side=tk.RIGHT, padx=(5, 0))
         
     def _create_left_panel(self):
@@ -150,17 +151,17 @@ class SegmentationAnnotator:
         box_frame = ttk.LabelFrame(left_frame, text="Box Controls", padding="10")
         box_frame.pack(fill=tk.X, pady=(0, 10))
         
-        ttk.Button(box_frame, text="🎯 Generate from Mask", command=self.generate_boxes).pack(fill=tk.X, pady=(0, 5))
-        ttk.Button(box_frame, text="🧹 Clear All Boxes", command=self.clear_boxes).pack(fill=tk.X, pady=(0, 5))
-        ttk.Button(box_frame, text="📏 Filter Small Boxes", command=self.filter_small_boxes).pack(fill=tk.X)
+        ttk.Button(box_frame, text="Generate from Mask", command=self.generate_boxes).pack(fill=tk.X, pady=(0, 5))
+        ttk.Button(box_frame, text="Clear All Boxes", command=self.clear_boxes).pack(fill=tk.X, pady=(0, 5))
+        ttk.Button(box_frame, text="Filter Small Boxes", command=self.filter_small_boxes).pack(fill=tk.X)
         
         # View controls
         view_frame = ttk.LabelFrame(left_frame, text="View Controls", padding="10")
         view_frame.pack(fill=tk.X)
         
-        ttk.Button(view_frame, text="🔍 Zoom In", command=self.zoom_in).pack(fill=tk.X, pady=(0, 5))
-        ttk.Button(view_frame, text="🔍 Zoom Out", command=self.zoom_out).pack(fill=tk.X, pady=(0, 5))
-        ttk.Button(view_frame, text="🏠 Fit to Window", command=self.fit_to_window).pack(fill=tk.X)
+        ttk.Button(view_frame, text="Zoom In", command=self.zoom_in).pack(fill=tk.X, pady=(0, 5))
+        ttk.Button(view_frame, text="Zoom Out", command=self.zoom_out).pack(fill=tk.X, pady=(0, 5))
+        ttk.Button(view_frame, text="Fit to Window", command=self.fit_to_window).pack(fill=tk.X)
         
     def _create_canvas_area(self):
         """Create the central canvas area for image display."""
@@ -179,6 +180,20 @@ class SegmentationAnnotator:
         # Bind keyboard shortcuts
         self.canvas.bind('<Control-m>', lambda e: self.toggle_mask_overlay())
         self.canvas.bind('<Control-z>', lambda e: self.undo_last_action())
+
+        # Mouse wheel: Ctrl+wheel to zoom, plain wheel to scroll
+        self.canvas.bind('<Control-MouseWheel>', self._on_mousewheel_zoom)   # Windows/macOS
+        self.canvas.bind('<MouseWheel>', self._on_mousewheel_scroll)         # Windows/macOS
+        self.canvas.bind('<Control-Button-4>', self._on_mousewheel_zoom)     # Linux zoom in
+        self.canvas.bind('<Control-Button-5>', self._on_mousewheel_zoom)     # Linux zoom out
+        self.canvas.bind('<Button-4>', self._on_mousewheel_scroll)           # Linux scroll up
+        self.canvas.bind('<Button-5>', self._on_mousewheel_scroll)           # Linux scroll down
+
+        # Shift + wheel for horizontal scrolling
+        self.canvas.bind('<Shift-MouseWheel>', self._on_mousewheel_horizontal)  # Windows/macOS
+        self.canvas.bind('<Shift-Button-4>', self._on_mousewheel_horizontal)    # Linux left
+        self.canvas.bind('<Shift-Button-5>', self._on_mousewheel_horizontal)    # Linux right
+
         self.canvas.focus_set()
         
         # Scrollbars
@@ -228,8 +243,8 @@ class SegmentationAnnotator:
         self.label_combo.bind("<<ComboboxSelected>>", self._on_label_changed)
         
         # Action buttons
-        ttk.Button(props_frame, text="🏷️ Edit Label", command=self.edit_selected_label).pack(fill=tk.X, pady=(0, 5))
-        ttk.Button(props_frame, text="🗑️ Delete Box", command=self.delete_selected_box).pack(fill=tk.X)
+        ttk.Button(props_frame, text="Edit Label", command=self.edit_selected_label).pack(fill=tk.X, pady=(0, 5))
+        ttk.Button(props_frame, text="Delete Box", command=self.delete_selected_box).pack(fill=tk.X)
         
         # Box list (with reduced height)
         list_frame = ttk.LabelFrame(right_frame, text="Bounding Boxes", padding="10")
@@ -262,7 +277,7 @@ class SegmentationAnnotator:
         self.save_format_combo = ttk.Combobox(
             save_frame, 
             textvariable=self.save_format_var,
-            values=["none", "JSON", "YOLO", "COCO"],
+            values=["none", "PASCAL VOC", "YOLO", "COCO"],
             state="readonly"
         )
         self.save_format_combo.pack(fill=tk.X)
@@ -298,7 +313,7 @@ class SegmentationAnnotator:
             self.root.after(100, self._show_welcome_message)
             return
         
-        welcome_text = """🖼️ Image Annotation App
+        welcome_text = """Bounding Box Annotation App
 
 Welcome! To get started:
 
@@ -569,12 +584,13 @@ Display: {self.display_width} × {self.display_height}"""
             
         image_filename = self.image_files[self.current_image_idx]
         image_path = os.path.join(self.dataset_path, "images", image_filename)
-        annotations_dir = os.path.join(self.dataset_path, "annotations")
+        annotations_dir = os.path.join(self.dataset_path, "masks")
         
         # Find mask file
         mask_filename = find_mask_file(image_filename, annotations_dir)
         if not mask_filename:
-            messagebox.showerror("Error", f"No mask file found for {image_filename}")
+            # messagebox.showerror("Error", f"No mask file found for {image_filename}")
+            messagebox.showinfo("Info", f"No mask file found for {image_filename}. You can draw boxes manually.")
             return
             
         mask_path = os.path.join(annotations_dir, mask_filename)
@@ -799,6 +815,37 @@ Display: {self.display_width} × {self.display_height}"""
             self.box_editor.filter_boxes_by_size(int(min_area_display))
             self._on_box_modified(0)  # Trigger update
             self.status_var.set(f"Filtered boxes smaller than {min_area} pixels")
+    
+    def _on_mousewheel_zoom(self, event):
+        # Zoom with Ctrl + wheel (Windows/macOS) or Ctrl + Button-4/5 (Linux)
+        delta = getattr(event, "delta", 0)
+        num = getattr(event, "num", None)
+        if delta > 0 or num == 4:
+            self.zoom_in()
+        else:
+            self.zoom_out()
+        return "break"
+
+    def _on_mousewheel_scroll(self, event):
+        # Vertical scroll with wheel when Ctrl is not held
+        if getattr(event, "delta", 0) != 0:
+            direction = -1 if event.delta > 0 else 1
+        else:
+            # Linux Button-4 (up) / Button-5 (down)
+            direction = -1 if getattr(event, "num", 0) == 4 else 1
+        self.canvas.yview_scroll(direction, "units")
+        return "break"
+    
+    def _on_mousewheel_horizontal(self, event):
+        # Horizontal scroll with Shift + wheel
+        if getattr(event, "delta", 0) != 0:
+            # Wheel up => left, down => right (Windows/macOS)
+            direction = -1 if event.delta > 0 else 1
+        else:
+            # Linux Button-4 (up/left) / Button-5 (down/right)
+            direction = -1 if getattr(event, "num", 0) == 4 else 1
+        self.canvas.xview_scroll(direction, "units")
+        return "break"
             
     def _handle_zoom_change(self, new_scale_factor):
         """Handle zoom change by updating display and maintaining view center."""
@@ -1130,16 +1177,16 @@ Great job on completing your annotation task!""".format(
     def _update_mask_overlay_button_text(self):
         """Update the text of the mask overlay button based on its state."""
         if self.mask_overlay_visible:
-            self.mask_overlay_btn.config(text="👁️ Hide Mask (Ctrl+M)")
+            self.mask_overlay_btn.config(text="Hide Mask (Ctrl+M)")
         else:
-            self.mask_overlay_btn.config(text="👁️ Show Mask (Ctrl+M)")
+            self.mask_overlay_btn.config(text="Show Mask (Ctrl+M)")
 
     def _load_current_mask(self, image_filename: str):
         """Load the corresponding mask for the current image."""
         self.current_mask = None
         self.displayed_mask = None
         
-        annotations_dir = os.path.join(self.dataset_path, "annotations")
+        annotations_dir = os.path.join(self.dataset_path, "masks")
         mask_filename = find_mask_file(image_filename, annotations_dir)
         if mask_filename:
             try:
@@ -1177,6 +1224,13 @@ Great job on completing your annotation task!""".format(
                     # Already binary, just ensure values are 0 and 255
                     mask_array = np.where(mask_array > 0, 255, 0).astype(np.uint8)
                 
+                # Auto-detect reversed masks (object=0, background=255)
+                zero_count = np.count_nonzero(mask_array == 0)
+                one_count = mask_array.size - zero_count
+                if zero_count < one_count:
+                    print("Detected inverted mask (object=0). Inverting to object=255, background=0.")
+                    mask_array = np.where(mask_array > 0, 0, 255).astype(np.uint8)
+                        
                 # Convert back to PIL Image
                 self.current_mask = Image.fromarray(mask_array, mode='L')
                 # Don't prepare overlay immediately - wait until display dimensions are set

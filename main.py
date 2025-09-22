@@ -19,7 +19,7 @@ import os
 def launch_tkinter():
     """Launch the Tkinter interface"""
     try:
-        from gui.annotation_window import SegmentationAnnotator
+        from gui.tk.annotation_window import SegmentationAnnotator
         import tkinter as tk
         
         root = tk.Tk()
